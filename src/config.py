@@ -4,11 +4,11 @@ import sys
 
 class MailChimpConfig:
     def __init__(self):
-        if os.path.isfile('../vault/APIKEY') == False:
-            print("Please enter your API Key into the APIKEY file as mentioned in README.md")
+        if os.path.isfile('../vault/API_KEY') == False:
+            print("Please enter your API Key into the API_KEY file as mentioned in README.md")
             sys.exit()
 
-        f = open('../vault/APIKEY', 'r+')
+        f = open('../vault/API_KEY', 'r+')
         apikey = f.read().strip()
         f.close()
 
