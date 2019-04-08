@@ -61,6 +61,27 @@ def make_data(row):
                 }
             }
 
+def make_data2(row):
+
+    return {'email_address': row['email'],
+            'status_if_new': 'subscribed',
+            'email_type': 'html',
+            'status': 'subscribed',
+            'merge_fields': {
+                'FNAME': row['first_name'] or "UNKNOWN",
+                'LNAME': row['last_name'] or "UNKNOWN",
+                'ADDRESS': {'addr1': row['primary_address1'] or "UNKNOWN",
+                            # might be wrong
+                            'addr2': row['primary_address2'],
+                            'city': row['primary_city'] or "UNKNOWN",
+                            'state': row['primary_state'] or "UNKNOWN",
+                            'zip': row['primary_zip'] or "UNKNOWN",
+                            'country': row['primary_country'] or "UNKNOWN"},
+                'PHONE': row['phone_number'],
+                'MOBILE': row['mobile_number']
+                }
+            }
+
 def subscribe(row, list_id=LIST_ID):
     data = make_data(row)
     client.lists.members.create_or_update(list_id=LIST_ID,
@@ -96,6 +117,7 @@ def update_phone(row, list_id=LIST_ID):
         # client.lists.members.create_or_update(list_id=LIST_ID,
         #                                       subscriber_hash=subscriber_hash(row['email']),
         #                                       data=data)
+
 
 def translate_row(r):
     """Anything in 'tag_list kee' will become a regular tag, prefixed with tag_
@@ -141,21 +163,65 @@ Any column not otherwise handled will be transformed into a value tag fmr_{colum
     return [tag for tag in tags if tag]
 
 
-def update_tags(row, list_id=LIST_ID):
-    tags = translate_row(row)
-    if tags:
+def update_tags(email, list_id=LIST_ID):
+    data = {'tags': [{'name': 'aaaa'}]}
+    client.lists.members.create_or_update(list_id=LIST_ID,
+                                          subscriber_hash=subscriber_hash(email),
+                                          data=data)
+
+
+def update_tags(email, list_id=LIST_ID, add=None, delete=None):
+    # delete
+    if delete:
         data = {
-            'tags': [{"name": tag, "status": "active"}
-                     for tag in tags]
+            'tags': [{"name": tag, "status": "inactive"}
+                     for tag in delete]
             }
-    else:
-        data = None
-    pprint.pprint(data)
-    if tags:
         try:
             client.lists.members.tags.update(list_id=LIST_ID,
-                                             subscriber_hash=subscriber_hash(row['email']),
+                                             subscriber_hash=subscriber_hash(email),
                                              data=data)
         except Exception as e:
-            print("Failed on {data}: {e}"
+            print("Failed to delete {data}: {e}"
                   .format(data=data, e=e))
+    # add
+    if add:
+        data = {
+            'tags': [{"name": tag, "status": "active"}
+                     for tag in add]
+            }
+        try:
+            client.lists.members.tags.update(list_id=LIST_ID,
+                                             subscriber_hash=subscriber_hash(email),
+                                             data=data)
+        except Exception as e:
+            print("Failed to delete {data}: {e}"
+                  .format(data=data, e=e))
+
+
+
+def update_mobile(email, list_id=LIST_ID, mobile=None):
+    assert mobile
+    shash = subscriber_hash(email)
+    data = client.lists.members.get(list_id=LIST_ID, subscriber_hash=shash)
+
+    useful = {"id": data["id"],
+              "email_address": data["email_address"],
+              "merge_fields": data["merge_fields"]}
+    useful['merge_fields']['MOBILE'] = mobile
+    client.lists.members.update(list_id=LIST_ID,
+                                subscriber_hash=subscriber_hash(email),
+                                data=data)
+
+def update_website(email, list_id=LIST_ID, website=None):
+    assert website
+    shash = subscriber_hash(email)
+    data = client.lists.members.get(list_id=LIST_ID, subscriber_hash=shash)
+
+    useful = {"id": data["id"],
+              "email_address": data["email_address"],
+              "merge_fields": data["merge_fields"]}
+    useful['merge_fields']['WEBSITE'] = website
+    client.lists.members.update(list_id=LIST_ID,
+                                subscriber_hash=subscriber_hash(email),
+                                data=data)
